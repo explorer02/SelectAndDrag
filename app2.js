@@ -42,18 +42,30 @@ function unselectAll() {
 		unselectItem(block);
 	});
 }
+function flipSelection(item) {
+	if (isSelected(item)) unselectItem(item);
+	else selectItem(item);
+}
 window.addEventListener('click', (ev) => {
 	if (isBlock(ev.target)) {
-		unselectAll();
-		selectItem(ev.target);
+		if (!ev.shiftKey) {
+			unselectAll();
+			selectItem(ev.target);
+		} else {
+			flipSelection(ev.target);
+		}
 	}
 });
 window.addEventListener('mousedown', (ev) => {
-	if (singleDragActive) {
-		selectionTop = window.pageYOffset + ev.clientY;
-		selectionLeft = window.pageXOffset + ev.clientX;
+	if (ev.shiftKey) {
+		initializeCoords(ev);
+		window.addEventListener('mousemove', mouseMoveShiftListener);
+	} else {
+		// if (isBlock(ev.target)) return;
+		initializeCoords(ev);
 		window.addEventListener('mousemove', mouseMoveListener);
 	}
+	// ev.stopImmediatePropagation();
 });
 
 function calculateRectangleCoords() {
@@ -62,6 +74,13 @@ function calculateRectangleCoords() {
 	let rectY1 = Math.min(selectionTop, selectionBottom);
 	let rectY2 = Math.max(selectionTop, selectionBottom);
 	return [rectX1, rectY1, rectX2, rectY2];
+}
+
+function initializeCoords(ev) {
+	selectionTop = window.pageYOffset + ev.clientY;
+	selectionLeft = window.pageXOffset + ev.clientX;
+	selectionBottom = selectionTop;
+	selectionRight = selectionLeft;
 }
 
 function finalizeCoords(ev) {
@@ -80,15 +99,22 @@ function isInsideRectangle(
 	[rectX1, rectY1, rectX2, rectY2],
 	[itemLeft, itemTop, itemRight, itemBottom]
 ) {
-	return !(
-		rectY1 > itemBottom ||
-		rectX1 > itemRight ||
-		rectX2 < itemLeft ||
-		rectY2 < itemTop
+	return (
+		!(
+			rectY1 > itemBottom ||
+			rectX1 > itemRight ||
+			rectX2 < itemLeft ||
+			rectY2 < itemTop
+		) &&
+		!(
+			rectY1 > itemTop &&
+			rectX1 > itemLeft &&
+			rectX2 < itemRight &&
+			rectY2 < itemBottom
+		)
 	);
 }
 function selectAllInsideRectangle() {
-	unselectAll();
 	let [rectX1, rectY1, rectX2, rectY2] = calculateRectangleCoords();
 	Array.from(items).forEach((item) => {
 		let itemRect = item.getBoundingClientRect();
@@ -106,98 +132,45 @@ function selectAllInsideRectangle() {
 		}
 	});
 }
+function flipAllInsideRectangle() {
+	let [rectX1, rectY1, rectX2, rectY2] = calculateRectangleCoords();
+	if (rectX1 == rectX2 && rectY1 == rectY2) return;
+	console.log([rectX1, rectY1, rectX2, rectY2]);
+	Array.from(items).forEach((item) => {
+		let itemRect = item.getBoundingClientRect();
+		let itemLeft = itemRect.x + window.pageXOffset;
+		let itemRight = itemRect.width + itemLeft;
+		let itemTop = itemRect.y + window.pageYOffset;
+		let itemBottom = itemTop + itemRect.height;
+		if (
+			isInsideRectangle(
+				[rectX1, rectY1, rectX2, rectY2],
+				[itemLeft, itemTop, itemRight, itemBottom]
+			)
+		) {
+			flipSelection(item);
+		}
+	});
+}
 function mouseMoveListener(ev) {
 	if (ev.buttons) {
 		finalizeCoords(ev);
 		drawRectangle();
+		unselectAll();
+
 		selectAllInsideRectangle();
 	} else {
-		selectionRectangle.style.display = 'none';
 		window.removeEventListener('mousemove', mouseMoveListener);
+		selectionRectangle.style.display = 'none';
 	}
 }
-// //adding click listener to all items
-// Array.from(items).forEach((item) => {
-// 	//unselection all items before selecting one
-// 	item.addEventListener('click', (ev) => {
-// 		if (!ev.shiftKey) {
-// 			Array.from(items).forEach((block) => {
-// 				unselectItem(block);
-// 			});
-// 			selectItem(item);
-// 		}
-// 		// else flipSelected(item);
-// 	});
-// });
-// let topC, left, bottom, right;
-
-// function mouseDownListener(ev) {
-// 	// console.log(ev.clientX, ev.clientY);
-// 	// console.log(ev.shiftKey, ev.ctrlKey, ev.altKey);
-// 	if (ev.shiftKey) {
-// 		topC = ev.clientY + window.pageYOffset;
-// 		left = ev.clientX + window.pageXOffset;
-// 		console.log('Top, left -> ', topC, left);
-// 		window.addEventListener('mousemove', mouseMoveListener);
-// 		window.addEventListener('mouseup', mouseUpListener);
-// 	}
-// }
-// function mouseMoveListener(ev) {
-// 	if (!ev.shiftKey) {
-// 		removeMouseEventListener(ev);
-// 	} else {
-// 		bottom = ev.clientY + window.pageYOffset;
-// 		right = ev.clientX + window.pageXOffset;
-// 		generateSelectionRectangle();
-// 	}
-// }
-// function generateRectangleCoords() {
-// 	let sl = Math.min(left, right);
-// 	let sr = Math.max(left, right);
-// 	let st = Math.min(topC, bottom);
-// 	let sb = Math.max(topC, bottom);
-// 	return [sl, sr, st, sb];
-// }
-// function generateSelectionRectangle() {
-// 	let [sl, sr, st, sb] = generateRectangleCoords();
-// 	rectangle.style.display = 'block';
-// 	rectangle.style.top = st + 'px';
-// 	rectangle.style.left = sl + 'px';
-// 	rectangle.style.height = sb - st + 'px';
-// 	rectangle.style.width = sr - sl + 'px';
-// }
-// function mouseUpListener(ev) {
-// 	removeMouseEventListener(ev);
-// }
-// function removeMouseEventListener(ev) {
-// 	window.removeEventListener('mousemove', mouseMoveListener);
-// 	window.removeEventListener('mouseup', mouseUpListener);
-// 	bottom = ev.clientY + window.pageYOffset;
-// 	right = ev.clientX + window.pageXOffset;
-// 	rectangle.style.display = 'none';
-// 	console.log('Bottom, Right -> ', bottom, right);
-// 	toggleSelection();
-// }
-// window.addEventListener('mousedown', mouseDownListener);
-
-// function toggleSelection() {
-// 	let [sl, sr, st, sb] = generateRectangleCoords();
-// 	Array.from(items).forEach((item) => {
-// 		let rect = item.getBoundingClientRect();
-// 		let el = rect.x + window.pageXOffset;
-// 		let er = el + rect.width;
-// 		let et = rect.y + window.pageYOffset;
-// 		let eb = et + rect.height;
-// 		if (isInsideRectangle({ st, sb, sl, sr }, { et, eb, el, er })) {
-// 			flipSelected(item);
-// 		}
-// 	});
-// }
-// function isInsideRectangle({ st, sb, sl, sr }, { et, eb, el, er }) {
-// 	return !(et > sb || eb < st || er < sl || sr < el);
-// }
-// function flipSelected(item) {
-// 	if (item.classList.contains('selected')) {
-// 		item.classList.remove('selected');
-// 	} else item.classList.add('selected');
-// }
+function mouseMoveShiftListener(ev) {
+	if (ev.shiftKey && ev.buttons) {
+		finalizeCoords(ev);
+		drawRectangle();
+	} else {
+		flipAllInsideRectangle();
+		window.removeEventListener('mousemove', mouseMoveShiftListener);
+		selectionRectangle.style.display = 'none';
+	}
+}

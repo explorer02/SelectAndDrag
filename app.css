@@ -1,7 +1,7 @@
 html,
 body {
-	width: 100%;
-	height: 100%;
+	width: fit-content;
+	height: fit-content;
 	padding: 0;
 	margin: 0;
 	background-color: bisque;
@@ -11,6 +11,7 @@ body {
 	display: flex;
 	flex-direction: row;
 	flex-wrap: wrap;
+	width: fit-content;
 }
 .block {
 	height: 100px;
@@ -22,7 +23,7 @@ body {
 	background-size: cover;
 	background-position: center;
 	background-size: 80%;
-	transition: 100ms;
+	transition: 0ms;
 	background-repeat: no-repeat;
 	/* background-color: blueviolet; */
 }
