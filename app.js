@@ -39,7 +39,6 @@ Array.from(items).forEach((item) => {
 		// else flipSelected(item);
 	});
 });
-
 let topC, left, bottom, right;
 
 function mouseDownListener(ev) {
