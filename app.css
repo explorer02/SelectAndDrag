@@ -1,0 +1,45 @@
+html,
+body {
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	margin: 0;
+	background-color: bisque;
+}
+.container {
+	padding: 5px;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+.block {
+	height: 100px;
+	flex-shrink: 1;
+	width: 100px;
+	padding: 35px;
+	box-sizing: border-box;
+	margin: 3px;
+	background-size: cover;
+	background-position: center;
+	background-size: 80%;
+	transition: 100ms;
+	background-repeat: no-repeat;
+	/* background-color: blueviolet; */
+}
+.block:hover {
+	/* background-color: rgba(0, 255, 255, 0.2); */
+}
+.movie {
+	background-image: url('./movie.png');
+	background-size: cover;
+}
+.document {
+	background-image: url('./doc.png');
+	background-size: cover;
+}
+.folder {
+	background-image: url('./folder.png');
+}
+.selected {
+	background-color: rgba(0, 0, 255, 0.3);
+}
