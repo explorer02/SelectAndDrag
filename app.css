@@ -43,3 +43,8 @@ body {
 .selected {
 	background-color: rgba(0, 0, 255, 0.3);
 }
+.rectangle {
+	display: none;
+	position: absolute;
+	background-color: rgba(0, 0, 255, 0.2);
+}
