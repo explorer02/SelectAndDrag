@@ -47,6 +47,7 @@ function flipSelection(item) {
 	else selectItem(item);
 }
 window.addEventListener('click', (ev) => {
+	// console.log('click');
 	if (isBlock(ev.target)) {
 		if (!ev.shiftKey) {
 			unselectAll();
@@ -57,6 +58,8 @@ window.addEventListener('click', (ev) => {
 	}
 });
 window.addEventListener('mousedown', (ev) => {
+	// console.log('mousedown');
+
 	if (ev.shiftKey) {
 		initializeCoords(ev);
 		window.addEventListener('mousemove', mouseMoveShiftListener);
@@ -129,7 +132,7 @@ function selectAllInsideRectangle() {
 			)
 		) {
 			selectItem(item);
-		}
+		} else unselectItem(item);
 	});
 }
 function flipAllInsideRectangle() {
@@ -152,11 +155,21 @@ function flipAllInsideRectangle() {
 		}
 	});
 }
+function checkBounds(ev) {
+	let containerRect = container.getBoundingClientRect();
+	return (
+		ev.clientX > containerRect.x &&
+		ev.clientY > containerRect.y &&
+		ev.clientX < containerRect.x + containerRect.width &&
+		ev.clientY < containerRect.y + containerRect.height
+	);
+}
 function mouseMoveListener(ev) {
 	if (ev.buttons) {
-		finalizeCoords(ev);
-		drawRectangle();
-		unselectAll();
+		if (checkBounds) {
+			finalizeCoords(ev);
+			drawRectangle();
+		}
 
 		selectAllInsideRectangle();
 	} else {

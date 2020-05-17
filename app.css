@@ -12,6 +12,7 @@ body {
 	flex-direction: row;
 	flex-wrap: wrap;
 	width: fit-content;
+	height: fit-content;
 }
 .block {
 	height: 100px;
