@@ -5,7 +5,7 @@ let singleDragActive = true;
 let selectionTop, selectionBottom, selectionLeft, selectionRight;
 let boundTop, boundBottom, boundLeft, boundRight;
 let timerID = null;
-let timeout = 10;
+let timeout = 0;
 
 //generate n*3 div blocks and add class names
 function generateBlocks(n) {
