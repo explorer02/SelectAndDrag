@@ -3,6 +3,7 @@ let container = document.getElementsByClassName('container')[0];
 let selectionRectangle = document.getElementsByClassName('rectangle')[0];
 let singleDragActive = true;
 let selectionTop, selectionBottom, selectionLeft, selectionRight;
+let boundTop, boundBottom, boundLeft, boundRight;
 
 //generate n*3 div blocks and add class names
 function generateBlocks(n) {
@@ -18,8 +19,16 @@ function generateBlocks(n) {
 		container.appendChild(divMovie);
 	}
 }
-generateBlocks(10);
+generateBlocks(100);
 
+function getBounds() {
+	let html = document.documentElement;
+	boundLeft = 0;
+	boundTop = 0;
+	boundBottom = html.scrollHeight;
+	boundRight = html.scrollWidth;
+	return [boundLeft, boundTop, boundRight, boundBottom];
+}
 //---------------------------------
 
 //select item
@@ -30,10 +39,10 @@ function selectItem(item) {
 function unselectItem(item) {
 	item.classList.remove('selected');
 }
-
 function isSelected(item) {
 	return item.classList.contains('selected');
 }
+
 function isBlock(item) {
 	return item.classList.contains('block');
 }
@@ -83,10 +92,11 @@ function initializeCoords(ev) {
 }
 
 function finalizeCoords(ev) {
-	selectionRight = pageXOffset + ev.clientX;
-	selectionBottom = pageYOffset + ev.clientY;
+	let [boundLeft, boundTop, boundRight, boundBottom] = getBounds();
+	selectionRight = Math.min(pageXOffset + ev.clientX, boundRight);
+	selectionBottom = Math.min(pageYOffset + ev.clientY, boundBottom);
 }
-//TODO: check bounds here
+
 function drawRectangle() {
 	let [rectX1, rectY1, rectX2, rectY2] = calculateRectangleCoords();
 	selectionRectangle.style.left = rectX1 + 'px';
@@ -114,14 +124,19 @@ function isInsideRectangle(
 		)
 	);
 }
+
+function getItemCoords(item) {
+	let itemRect = item.getBoundingClientRect();
+	let itemLeft = itemRect.x + window.pageXOffset;
+	let itemRight = itemRect.width + itemLeft;
+	let itemTop = itemRect.y + window.pageYOffset;
+	let itemBottom = itemTop + itemRect.height;
+	return [itemLeft, itemTop, itemRight, itemBottom];
+}
 function selectAllInsideRectangle() {
 	let [rectX1, rectY1, rectX2, rectY2] = calculateRectangleCoords();
 	Array.from(items).forEach((item) => {
-		let itemRect = item.getBoundingClientRect();
-		let itemLeft = itemRect.x + window.pageXOffset;
-		let itemRight = itemRect.width + itemLeft;
-		let itemTop = itemRect.y + window.pageYOffset;
-		let itemBottom = itemTop + itemRect.height;
+		let [itemLeft, itemTop, itemRight, itemBottom] = getItemCoords(item);
 		if (
 			isInsideRectangle(
 				[rectX1, rectY1, rectX2, rectY2],
@@ -132,43 +147,47 @@ function selectAllInsideRectangle() {
 		} else unselectItem(item);
 	});
 }
-function flipAllInsideRectangle() {
+function processAllInsideRectangle() {
 	let [rectX1, rectY1, rectX2, rectY2] = calculateRectangleCoords();
 	if (rectX1 == rectX2 && rectY1 == rectY2) return;
-	console.log([rectX1, rectY1, rectX2, rectY2]);
+
 	Array.from(items).forEach((item) => {
-		let itemRect = item.getBoundingClientRect();
-		let itemLeft = itemRect.x + window.pageXOffset;
-		let itemRight = itemRect.width + itemLeft;
-		let itemTop = itemRect.y + window.pageYOffset;
-		let itemBottom = itemTop + itemRect.height;
+		let [itemLeft, itemTop, itemRight, itemBottom] = getItemCoords(item);
 		if (
 			isInsideRectangle(
 				[rectX1, rectY1, rectX2, rectY2],
 				[itemLeft, itemTop, itemRight, itemBottom]
 			)
 		) {
-			flipSelection(item);
+			// console.log(item.classList);
+			if (isSelected(item)) {
+				item.classList.add('unselecting');
+			} else item.classList.add('selecting');
+		} else {
+			item.classList.remove('selecting', 'unselecting');
 		}
 	});
 }
-function checkBounds(ev) {
-	let containerRect = container.getBoundingClientRect();
-	return (
-		ev.clientX > containerRect.x &&
-		ev.clientY > containerRect.y &&
-		ev.clientX < containerRect.x + containerRect.width &&
-		ev.clientY < containerRect.y + containerRect.height
-	);
+function finalProcess() {
+	Array.from(items).forEach((item) => {
+		if (item.classList.contains('selecting')) {
+			item.classList.remove('selecting');
+			selectItem(item);
+		} else if (item.classList.contains('unselecting')) {
+			item.classList.remove('unselecting');
+			unselectItem(item);
+		}
+	});
 }
+
 function mouseMoveListener(ev) {
 	if (ev.buttons) {
-		console.log(true);
+		// console.log(true);
 		finalizeCoords(ev);
 		drawRectangle();
 		selectAllInsideRectangle();
 	} else {
-		console.log('mousemove removed');
+		// console.log('mousemove removed');
 
 		window.removeEventListener('mousemove', mouseMoveListener);
 		selectionRectangle.style.display = 'none';
@@ -178,8 +197,9 @@ function mouseMoveShiftListener(ev) {
 	if (ev.shiftKey && ev.buttons) {
 		finalizeCoords(ev);
 		drawRectangle();
+		processAllInsideRectangle();
 	} else {
-		flipAllInsideRectangle();
+		finalProcess();
 		window.removeEventListener('mousemove', mouseMoveShiftListener);
 		selectionRectangle.style.display = 'none';
 	}
