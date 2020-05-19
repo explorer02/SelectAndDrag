@@ -11,14 +11,16 @@
     <button>Click me!!</button>
     <script>
         let timerID = null;
-        // window.addEventListener('mousemove', () => {
-        //     if (!timerID) {
-        //         timerID = setTimeout(() => {
-        //             console.log('mousemove')
-        //             timerID = null;
-        //         }, 200);
-        //     }
-        // })
+        let m = null;
+        function fun(p) {
+            m = p;
+            if (!timerID) {
+                timerID = setTimeout(() => {
+                    console.log(m)
+                    timerID = null;
+                }, 10000);
+            }
+        }
     </script>
 </body>
 

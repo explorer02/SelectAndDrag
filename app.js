@@ -6,8 +6,10 @@ let selectionTop, selectionBottom, selectionLeft, selectionRight;
 let boundTop, boundBottom, boundLeft, boundRight;
 let timerID = null;
 let timerIDShift = null;
-let timeout = 100;
-//test commit
+let timeout = 150;
+// let clickDragEvent = null;
+// let shiftClickDragEvent = null;
+
 //generate n*3 div blocks and add class names
 function generateBlocks(n) {
 	for (let i = 0; i < n; i++) {
@@ -52,6 +54,8 @@ function isBlock(item) {
 function unselectAll() {
 	Array.from(items).forEach((block) => {
 		unselectItem(block);
+		// block.classList.remove('selecting');
+		// block.classList.remove('unselecting');
 	});
 }
 function flipSelection(item) {
@@ -132,6 +136,7 @@ function getItemCoords(item) {
 	let itemRight = itemRect.width + itemLeft;
 	let itemTop = itemRect.y + window.pageYOffset;
 	let itemBottom = itemTop + itemRect.height;
+
 	return [itemLeft, itemTop, itemRight, itemBottom];
 }
 function selectAllInsideRectangle() {
@@ -169,13 +174,14 @@ function processAllInsideRectangle() {
 	});
 }
 function finalProcess() {
+	console.log('Inside final process');
 	Array.from(items).forEach((item) => {
 		if (item.classList.contains('selecting')) {
 			item.classList.remove('selecting');
 			selectItem(item);
 		} else if (item.classList.contains('unselecting')) {
-			item.classList.remove('unselecting');
 			unselectItem(item);
+			item.classList.remove('unselecting');
 		}
 	});
 }
@@ -186,32 +192,34 @@ function mouseMoveListener(ev) {
 		drawRectangle();
 		if (!timerID) {
 			timerID = setTimeout(() => {
-				selectAllInsideRectangle();
-				console.log('selecting in click and drag');
+				console.log('Inside timer->selecting in click and drag');
+				if (timerID) selectAllInsideRectangle();
 				timerID = null;
 			}, timeout);
 		}
 	} else {
+		timerID = null;
 		window.removeEventListener('mousemove', mouseMoveListener);
 		selectionRectangle.style.display = 'none';
 	}
 }
 function mouseMoveShiftListener(ev) {
-	ev.preventDefault();
+	// ev.preventDefault();
 	if (ev.shiftKey && ev.buttons) {
 		finalizeCoords(ev);
 		drawRectangle();
 		if (!timerIDShift) {
 			timerIDShift = setTimeout(() => {
-				console.log('selecting in shift+click and drag');
-
-				processAllInsideRectangle();
+				console.log('Inside timer -> selecting in shift+click and drag');
+				if (timerIDShift) processAllInsideRectangle();
 				timerIDShift = null;
 			}, timeout);
 		}
 	} else {
 		finalProcess();
+		timerIDShift = null;
 		window.removeEventListener('mousemove', mouseMoveShiftListener);
+		// ev.stopImmediatePropagation();
 		selectionRectangle.style.display = 'none';
 	}
 }

@@ -42,10 +42,7 @@ body {
 	background-image: url('./folder.png');
 	/* background-size: cover; */
 }
-.selected {
-	background-color: rgba(0, 0, 255, 0.3);
-}
-.selecting {
+.selected, .selecting {
 	background-color: rgba(0, 0, 255, 0.3);
 }
 .unselecting {
