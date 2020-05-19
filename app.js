@@ -6,13 +6,7 @@ let selectionTop, selectionBottom, selectionLeft, selectionRight;
 let boundTop, boundBottom, boundLeft, boundRight;
 let timerID = null;
 let timerIDShift = null;
-<<<<<<< HEAD
-let timeout = 100;
-=======
 let timeout = 150;
-// let clickDragEvent = null;
-// let shiftClickDragEvent = null;
->>>>>>> MouseUp
 
 //generate n*3 div blocks and add class names
 function generateBlocks(n) {
