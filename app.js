@@ -1,6 +1,13 @@
 let items = document.getElementsByClassName('block');
 let container = document.getElementsByClassName('container')[0];
-let rectangle = document.getElementsByClassName('rectangle')[0];
+let selectionRectangle = document.getElementsByClassName('rectangle')[0];
+let singleDragActive = true;
+let selectionTop, selectionBottom, selectionLeft, selectionRight;
+let boundTop, boundBottom, boundLeft, boundRight;
+let timerID = null;
+let timerIDShift = null;
+let timeout = 100;
+//test commit
 //generate n*3 div blocks and add class names
 function generateBlocks(n) {
 	for (let i = 0; i < n; i++) {
@@ -17,6 +24,16 @@ function generateBlocks(n) {
 }
 generateBlocks(100);
 
+function getBounds() {
+	let html = document.documentElement;
+	boundLeft = 0;
+	boundTop = 0;
+	boundBottom = html.scrollHeight;
+	boundRight = html.scrollWidth;
+	return [boundLeft, boundTop, boundRight, boundBottom];
+}
+//---------------------------------
+
 //select item
 function selectItem(item) {
 	item.classList.add('selected');
@@ -25,89 +42,176 @@ function selectItem(item) {
 function unselectItem(item) {
 	item.classList.remove('selected');
 }
+function isSelected(item) {
+	return item.classList.contains('selected');
+}
 
-//adding click listener to all items
-Array.from(items).forEach((item) => {
-	//unselection all items before selecting one
-	item.addEventListener('click', (ev) => {
+function isBlock(item) {
+	return item.classList.contains('block');
+}
+function unselectAll() {
+	Array.from(items).forEach((block) => {
+		unselectItem(block);
+	});
+}
+function flipSelection(item) {
+	if (isSelected(item)) unselectItem(item);
+	else selectItem(item);
+}
+window.addEventListener('click', (ev) => {
+	if (isBlock(ev.target)) {
 		if (!ev.shiftKey) {
-			Array.from(items).forEach((block) => {
-				unselectItem(block);
-			});
-			selectItem(item);
+			unselectAll();
+			selectItem(ev.target);
+		} else {
+			flipSelection(ev.target);
 		}
-		// else flipSelected(item);
-	});
+	}
 });
-let topC, left, bottom, right;
-
-function mouseDownListener(ev) {
-	// console.log(ev.clientX, ev.clientY);
-	// console.log(ev.shiftKey, ev.ctrlKey, ev.altKey);
+window.addEventListener('mousedown', (ev) => {
+	initializeCoords(ev);
 	if (ev.shiftKey) {
-		topC = ev.clientY + window.pageYOffset;
-		left = ev.clientX + window.pageXOffset;
-		console.log('Top, left -> ', topC, left);
-		window.addEventListener('mousemove', mouseMoveListener);
-		window.addEventListener('mouseup', mouseUpListener);
-	}
-}
-function mouseMoveListener(ev) {
-	if (!ev.shiftKey) {
-		removeMouseEventListener(ev);
+		window.addEventListener('mousemove', mouseMoveShiftListener);
 	} else {
-		bottom = ev.clientY + window.pageYOffset;
-		right = ev.clientX + window.pageXOffset;
-		generateSelectionRectangle();
+		window.addEventListener('mousemove', mouseMoveListener);
 	}
-}
-function generateRectangleCoords() {
-	let sl = Math.min(left, right);
-	let sr = Math.max(left, right);
-	let st = Math.min(topC, bottom);
-	let sb = Math.max(topC, bottom);
-	return [sl, sr, st, sb];
-}
-function generateSelectionRectangle() {
-	let [sl, sr, st, sb] = generateRectangleCoords();
-	rectangle.style.display = 'block';
-	rectangle.style.top = st + 'px';
-	rectangle.style.left = sl + 'px';
-	rectangle.style.height = sb - st + 'px';
-	rectangle.style.width = sr - sl + 'px';
-}
-function mouseUpListener(ev) {
-	removeMouseEventListener(ev);
-}
-function removeMouseEventListener(ev) {
-	window.removeEventListener('mousemove', mouseMoveListener);
-	window.removeEventListener('mouseup', mouseUpListener);
-	bottom = ev.clientY + window.pageYOffset;
-	right = ev.clientX + window.pageXOffset;
-	rectangle.style.display = 'none';
-	console.log('Bottom, Right -> ', bottom, right);
-	toggleSelection();
-}
-window.addEventListener('mousedown', mouseDownListener);
+});
 
-function toggleSelection() {
-	let [sl, sr, st, sb] = generateRectangleCoords();
+function calculateRectangleCoords() {
+	let rectX1 = Math.min(selectionLeft, selectionRight);
+	let rectX2 = Math.max(selectionLeft, selectionRight);
+	let rectY1 = Math.min(selectionTop, selectionBottom);
+	let rectY2 = Math.max(selectionTop, selectionBottom);
+	return [rectX1, rectY1, rectX2, rectY2];
+}
+
+function initializeCoords(ev) {
+	selectionTop = window.pageYOffset + ev.clientY;
+	selectionLeft = window.pageXOffset + ev.clientX;
+	selectionBottom = selectionTop;
+	selectionRight = selectionLeft;
+}
+
+function finalizeCoords(ev) {
+	let [boundLeft, boundTop, boundRight, boundBottom] = getBounds();
+	selectionRight = Math.min(pageXOffset + ev.clientX, boundRight);
+	selectionBottom = Math.min(pageYOffset + ev.clientY, boundBottom);
+}
+
+function drawRectangle() {
+	let [rectX1, rectY1, rectX2, rectY2] = calculateRectangleCoords();
+	selectionRectangle.style.left = rectX1 + 'px';
+	selectionRectangle.style.top = rectY1 + 'px';
+	selectionRectangle.style.width = rectX2 - rectX1 + 'px';
+	selectionRectangle.style.height = rectY2 - rectY1 + 'px';
+	selectionRectangle.style.display = 'block';
+}
+function isInsideRectangle(
+	[rectX1, rectY1, rectX2, rectY2],
+	[itemLeft, itemTop, itemRight, itemBottom]
+) {
+	return (
+		!(
+			rectY1 > itemBottom ||
+			rectX1 > itemRight ||
+			rectX2 < itemLeft ||
+			rectY2 < itemTop
+		) &&
+		!(
+			rectY1 > itemTop &&
+			rectX1 > itemLeft &&
+			rectX2 < itemRight &&
+			rectY2 < itemBottom
+		)
+	);
+}
+
+function getItemCoords(item) {
+	let itemRect = item.getBoundingClientRect();
+	let itemLeft = itemRect.x + window.pageXOffset;
+	let itemRight = itemRect.width + itemLeft;
+	let itemTop = itemRect.y + window.pageYOffset;
+	let itemBottom = itemTop + itemRect.height;
+	return [itemLeft, itemTop, itemRight, itemBottom];
+}
+function selectAllInsideRectangle() {
+	let [rectX1, rectY1, rectX2, rectY2] = calculateRectangleCoords();
 	Array.from(items).forEach((item) => {
-		let rect = item.getBoundingClientRect();
-		let el = rect.x + window.pageXOffset;
-		let er = el + rect.width;
-		let et = rect.y + window.pageYOffset;
-		let eb = et + rect.height;
-		if (isInsideRectangle({ st, sb, sl, sr }, { et, eb, el, er })) {
-			flipSelected(item);
+		let [itemLeft, itemTop, itemRight, itemBottom] = getItemCoords(item);
+		if (
+			isInsideRectangle(
+				[rectX1, rectY1, rectX2, rectY2],
+				[itemLeft, itemTop, itemRight, itemBottom]
+			)
+		) {
+			selectItem(item);
+		} else unselectItem(item);
+	});
+}
+function processAllInsideRectangle() {
+	let [rectX1, rectY1, rectX2, rectY2] = calculateRectangleCoords();
+	if (rectX1 == rectX2 && rectY1 == rectY2) return;
+
+	Array.from(items).forEach((item) => {
+		let [itemLeft, itemTop, itemRight, itemBottom] = getItemCoords(item);
+		if (
+			isInsideRectangle(
+				[rectX1, rectY1, rectX2, rectY2],
+				[itemLeft, itemTop, itemRight, itemBottom]
+			)
+		) {
+			if (isSelected(item)) {
+				item.classList.add('unselecting');
+			} else item.classList.add('selecting');
+		} else {
+			item.classList.remove('selecting', 'unselecting');
 		}
 	});
 }
-function isInsideRectangle({ st, sb, sl, sr }, { et, eb, el, er }) {
-	return !(et > sb || eb < st || er < sl || sr < el);
+function finalProcess() {
+	Array.from(items).forEach((item) => {
+		if (item.classList.contains('selecting')) {
+			item.classList.remove('selecting');
+			selectItem(item);
+		} else if (item.classList.contains('unselecting')) {
+			item.classList.remove('unselecting');
+			unselectItem(item);
+		}
+	});
 }
-function flipSelected(item) {
-	if (item.classList.contains('selected')) {
-		item.classList.remove('selected');
-	} else item.classList.add('selected');
+
+function mouseMoveListener(ev) {
+	if (ev.buttons) {
+		finalizeCoords(ev);
+		drawRectangle();
+		if (!timerID) {
+			timerID = setTimeout(() => {
+				selectAllInsideRectangle();
+				console.log('selecting in click and drag');
+				timerID = null;
+			}, timeout);
+		}
+	} else {
+		window.removeEventListener('mousemove', mouseMoveListener);
+		selectionRectangle.style.display = 'none';
+	}
+}
+function mouseMoveShiftListener(ev) {
+	ev.preventDefault();
+	if (ev.shiftKey && ev.buttons) {
+		finalizeCoords(ev);
+		drawRectangle();
+		if (!timerIDShift) {
+			timerIDShift = setTimeout(() => {
+				console.log('selecting in shift+click and drag');
+
+				processAllInsideRectangle();
+				timerIDShift = null;
+			}, timeout);
+		}
+	} else {
+		finalProcess();
+		window.removeEventListener('mousemove', mouseMoveShiftListener);
+		selectionRectangle.style.display = 'none';
+	}
 }
