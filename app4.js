@@ -5,6 +5,7 @@ let singleDragActive = true;
 let selectionTop, selectionBottom, selectionLeft, selectionRight;
 let boundTop, boundBottom, boundLeft, boundRight;
 let timerID = null;
+let timerIDShift = null;
 let timeout = 0;
 
 //generate n*3 div blocks and add class names
@@ -58,7 +59,8 @@ function flipSelection(item) {
 	else selectItem(item);
 }
 window.addEventListener('click', (ev) => {
-	// console.log('click');
+	debugger;
+	console.log('mouse click', ev.target);
 	if (isBlock(ev.target)) {
 		if (!ev.shiftKey) {
 			unselectAll();
@@ -69,10 +71,12 @@ window.addEventListener('click', (ev) => {
 	}
 });
 window.addEventListener('mousedown', (ev) => {
+	console.log('mouse down');
 	initializeCoords(ev);
 	if (ev.shiftKey) {
 		window.addEventListener('mousemove', mouseMoveShiftListener);
 	} else {
+		console.log('mouse attaching');
 		window.addEventListener('mousemove', mouseMoveListener);
 	}
 });
@@ -182,30 +186,34 @@ function finalProcess() {
 }
 
 function mouseMoveListener(ev) {
+	console.log('mouse moving');
+
 	if (ev.buttons) {
 		finalizeCoords(ev);
 		drawRectangle();
 		if (!timerID) {
 			timerID = setTimeout(() => {
 				selectAllInsideRectangle();
-				console.log('hello');
+				// console.log('hello');
 				timerID = null;
 			}, timeout);
 		}
 	} else {
+		console.log('mouse move removed');
+
 		window.removeEventListener('mousemove', mouseMoveListener);
 		selectionRectangle.style.display = 'none';
 	}
 }
 function mouseMoveShiftListener(ev) {
+	ev.preventDefault();
 	if (ev.shiftKey && ev.buttons) {
 		finalizeCoords(ev);
 		drawRectangle();
-		if (!timerID) {
-			timerID = setTimeout(() => {
+		if (!timerIDShift) {
+			timerIDShift = setTimeout(() => {
 				processAllInsideRectangle();
-				console.log('hello yourself');
-				timerID = null;
+				timerIDShift = null;
 			}, timeout);
 		}
 	} else {
