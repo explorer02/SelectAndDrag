@@ -7,7 +7,7 @@ let boundTop, boundBottom, boundLeft, boundRight;
 let timerID = null;
 let timerIDShift = null;
 let timeout = 0;
-
+//test commit
 //generate n*3 div blocks and add class names
 function generateBlocks(n) {
 	for (let i = 0; i < n; i++) {
