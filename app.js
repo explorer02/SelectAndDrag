@@ -6,7 +6,7 @@ let selectionTop, selectionBottom, selectionLeft, selectionRight;
 let boundTop, boundBottom, boundLeft, boundRight;
 let timerID = null;
 let timerIDShift = null;
-let timeout = 150;
+let timeout = 100;
 
 //generate n*3 div blocks and add class names
 function generateBlocks(n) {
@@ -61,20 +61,26 @@ function flipSelection(item) {
 	else selectItem(item);
 }
 window.addEventListener('click', (ev) => {
+	// console.log('click registered');
 	if (isBlock(ev.target)) {
 		if (!ev.shiftKey) {
+			// console.log('click registered with shift key');
 			unselectAll();
 			selectItem(ev.target);
 		} else {
+			// console.log('click registered without shift key');
 			flipSelection(ev.target);
 		}
 	}
 });
 window.addEventListener('mousedown', (ev) => {
+	// console.log('mousedown registered');
 	initializeCoords(ev);
 	if (ev.shiftKey) {
+		// console.log('mousemove shift listener attached');
 		window.addEventListener('mousemove', mouseMoveShiftListener);
 	} else {
+		// console.log('mousemove listener attached');
 		window.addEventListener('mousemove', mouseMoveListener);
 	}
 });
@@ -101,6 +107,7 @@ function finalizeCoords(ev) {
 }
 
 function drawRectangle() {
+	// console.log('drawing');
 	let [rectX1, rectY1, rectX2, rectY2] = calculateRectangleCoords();
 	selectionRectangle.style.left = rectX1 + 'px';
 	selectionRectangle.style.top = rectY1 + 'px';
@@ -172,7 +179,7 @@ function processAllInsideRectangle() {
 	});
 }
 function finalProcess() {
-	console.log('Inside final process');
+	// console.log('Inside final process');
 	Array.from(items).forEach((item) => {
 		if (item.classList.contains('selecting')) {
 			item.classList.remove('selecting');
@@ -185,30 +192,33 @@ function finalProcess() {
 }
 
 function mouseMoveListener(ev) {
+	ev.preventDefault();
 	if (ev.buttons) {
+		// console.log('mousemove active');
 		finalizeCoords(ev);
 		drawRectangle();
 		if (!timerID) {
 			timerID = setTimeout(() => {
-				console.log('Inside timer->selecting in click and drag');
+				// console.log('Inside timer->selecting in click and drag');
 				if (timerID) selectAllInsideRectangle();
 				timerID = null;
 			}, timeout);
 		}
 	} else {
+		// console.log('mousemove removed');
 		timerID = null;
 		window.removeEventListener('mousemove', mouseMoveListener);
 		selectionRectangle.style.display = 'none';
 	}
 }
 function mouseMoveShiftListener(ev) {
-	// ev.preventDefault();
+	ev.preventDefault();
 	if (ev.shiftKey && ev.buttons) {
 		finalizeCoords(ev);
 		drawRectangle();
 		if (!timerIDShift) {
 			timerIDShift = setTimeout(() => {
-				console.log('Inside timer -> selecting in shift+click and drag');
+				// console.log('Inside timer -> selecting in shift+click and drag');
 				if (timerIDShift) processAllInsideRectangle();
 				timerIDShift = null;
 			}, timeout);
